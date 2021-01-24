@@ -1,0 +1,13 @@
+mos.config:
+  host: http://localhost:9700
+  secret-key: xxxxxxxx
+  open-id: 1
+  bucket-name: default
+
+cloud:
+  backup-paths:
+    - srcPath: E:/
+      desPath: /backup
+#  recover-paths:
+#    - srcPath: /backup
+#      desPath: D:/recover

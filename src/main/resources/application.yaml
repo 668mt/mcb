@@ -1,0 +1,13 @@
+mos.config:
+  host: http://localhost:9700
+  secret-key: b-T3wXaUu5umA3vumqEIVA==
+  open-id: 5
+  bucket-name: default
+
+cloud:
+  backup-paths:
+    - srcPath: C:/Users/Administrator/Desktop/test
+      desPath: /backup/test
+  recover-paths:
+    - srcPath: /backup/test
+      desPath: C:/Users/Administrator/Desktop/test-recover
