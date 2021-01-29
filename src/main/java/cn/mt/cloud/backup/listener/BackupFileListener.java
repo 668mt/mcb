@@ -22,8 +22,10 @@ public class BackupFileListener implements FileAlterationListener {
 	private final String srcPath;
 	private final String desPath;
 	private final MtExecutor<Runnable> executor;
+	private final FileRecorder fileRecorder;
 	
-	public BackupFileListener(MtExecutor<Runnable> executor, MosSdk mosSdk, String srcPath, String desPath) {
+	public BackupFileListener(FileRecorder fileRecorder, MtExecutor<Runnable> executor, MosSdk mosSdk, String srcPath, String desPath) {
+		this.fileRecorder = fileRecorder;
 		this.executor = executor;
 		this.mosSdk = mosSdk;
 		this.srcPath = srcPath;
@@ -80,7 +82,12 @@ public class BackupFileListener implements FileAlterationListener {
 		@SneakyThrows
 		@Override
 		public void run() {
-			mosSdk.uploadFile(this.file, new UploadInfo(getPathname(file, srcPath, desPath), true));
+			if (!fileRecorder.isUploaded(file)) {
+				String pathname = getPathname(file, srcPath, desPath);
+				pathname = mosSdk.getSafelyPathname(pathname);
+				mosSdk.uploadFile(this.file, new UploadInfo(pathname, true));
+				fileRecorder.markUploaded(file);
+			}
 		}
 	}
 	
@@ -95,9 +102,11 @@ public class BackupFileListener implements FileAlterationListener {
 		@Override
 		public void run() {
 			String pathname = getPathname(file, srcPath, desPath);
+			pathname = mosSdk.getSafelyPathname(pathname);
 			if (mosSdk.isExists(pathname)) {
 				log.info("删除文件:{}", pathname);
 				mosSdk.deleteFile(pathname);
+				fileRecorder.markDeleted(file);
 			}
 		}
 	}
@@ -114,7 +123,8 @@ public class BackupFileListener implements FileAlterationListener {
 		public void run() {
 			String pathname = getPathname(directory, srcPath, desPath);
 			log.info("删除文件夹:{}", pathname);
-			mosSdk.deleteDir(pathname);
+			String safelyPathname = mosSdk.getSafelyPathname(pathname);
+			mosSdk.deleteDir(safelyPathname);
 		}
 	}
 }

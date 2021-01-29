@@ -1,6 +1,7 @@
 package cn.mt.cloud.backup.utils;
 
 import mt.spring.mos.base.utils.Assert;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.util.AntPathMatcher;
 
 import java.io.File;
@@ -25,25 +26,31 @@ public class FileUtils {
 		return path;
 	}
 	
+	public static boolean isInclude(String relaPathname, List<String> includes) {
+		if (CollectionUtils.isEmpty(includes)) {
+			return true;
+		}
+		return anyMatch(relaPathname, includes);
+	}
+	
+	public static boolean isExclude(String relaPathname, List<String> excludes) {
+		return anyMatch(relaPathname, excludes);
+	}
+	
+	public static boolean anyMatch(String relaPathname, List<String> patterns) {
+		if (CollectionUtils.isEmpty(patterns)) {
+			return false;
+		}
+		for (String pattern : patterns) {
+			if (ANT_PATH_MATCHER.match(pattern, relaPathname)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	public static boolean match(String relaPathname, List<String> includes, List<String> excludes) {
-		boolean match = true;
-		if (includes != null) {
-			for (String include : includes) {
-				if (!ANT_PATH_MATCHER.match(include, relaPathname)) {
-					match = false;
-					break;
-				}
-			}
-		}
-		if (match && excludes != null) {
-			for (String exclude : excludes) {
-				if (ANT_PATH_MATCHER.match(exclude, relaPathname)) {
-					match = false;
-					break;
-				}
-			}
-		}
-		return match;
+		return isInclude(relaPathname, includes) && !isExclude(relaPathname, excludes);
 	}
 	
 	public static String getPathname(File file, String srcPath, String desPath) throws IOException {

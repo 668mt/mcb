@@ -33,6 +33,8 @@ public class BackUpWorker implements SmartLifecycle {
 	private final BackupProperties backupProperties;
 	@Autowired
 	private MosHelper mosHelper;
+	@Autowired
+	private FileRecorder fileRecorder;
 	
 	private final MtExecutor<Runnable> addFilesExecutor = new MtExecutor<Runnable>("addFiles", 1) {
 		@Override
@@ -85,7 +87,7 @@ public class BackUpWorker implements SmartLifecycle {
 				log.info("start listen: {}", srcPath);
 				loadFiles(backupPath);
 				FileAlterationObserver observer = new FileAlterationObserver(new File(srcPath), new IncludeFileFilter(backupPath));
-				observer.addListener(new BackupFileListener(addFilesExecutor, mosSdk, srcPath, desPath));
+				observer.addListener(new BackupFileListener(fileRecorder, addFilesExecutor, mosSdk, srcPath, desPath));
 				FileAlterationMonitor monitor = new FileAlterationMonitor();
 				monitor.addObserver(observer);
 				monitor.start();
@@ -98,13 +100,13 @@ public class BackUpWorker implements SmartLifecycle {
 	}
 	
 	private final AtomicBoolean loaded = new AtomicBoolean(false);
+	private MtExecutor<Runnable> loadFilesExecutor;
 	
-	private void loadFiles(BackupProperties.PathConfig backupPath) {
-		String srcPath = backupPath.getSrcPath();
-		List<String> includes = backupPath.getIncludes();
-		List<String> excludes = backupPath.getExcludes();
-		File file = new File(srcPath);
-		MtExecutor<Runnable> loadFilesExecutor = new MtExecutor<Runnable>("loadFiles", 2) {
+	private synchronized void initLoadFilesExecutor() {
+		if (loadFilesExecutor != null) {
+			return;
+		}
+		loadFilesExecutor = new MtExecutor<Runnable>("loadFiles", 2) {
 			@Override
 			public void doJob(Runnable task) {
 				mosHelper.waitUtilMosAlive();
@@ -119,8 +121,17 @@ public class BackUpWorker implements SmartLifecycle {
 					loaded.set(true);
 					loaded.notifyAll();
 				}
+				fileRecorder.flush();
 			}
 		});
+	}
+	
+	private void loadFiles(BackupProperties.PathConfig backupPath) {
+		initLoadFilesExecutor();
+		String srcPath = backupPath.getSrcPath();
+		List<String> includes = backupPath.getIncludes();
+		List<String> excludes = backupPath.getExcludes();
+		File file = new File(srcPath);
 		FileUtils.listFiles(file, new IOFileFilter() {
 			@SneakyThrows
 			@Override
@@ -161,9 +172,15 @@ public class BackUpWorker implements SmartLifecycle {
 				String srcPath = pathConfig.getSrcPath();
 				String desPath = pathConfig.getDesPath();
 				String pathname = getPathname(file, srcPath, desPath);
-				if (mosSdk.isFileModified(pathname, file)) {
-					log.info("上传文件{}", file);
-					mosSdk.uploadFile(file, new UploadInfo(pathname, true));
+				pathname = mosSdk.getSafelyPathname(pathname);
+				if (!fileRecorder.isUploaded(file)) {
+					if (mosSdk.isFileModified(pathname, file)) {
+						log.info("上传文件{}", file);
+						mosSdk.uploadFile(file, new UploadInfo(pathname, true));
+					}
+					fileRecorder.markUploaded(file);
+				} else {
+					log.info("{}已经上传过，跳过上传", file);
 				}
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
