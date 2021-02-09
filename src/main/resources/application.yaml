@@ -1,21 +1,33 @@
 mos.config:
+  #开发环境
 #  host: http://localhost:9700
 #  secret-key: b-T3wXaUu5umA3vumqEIVA==
 #  open-id: 5
 #  bucket-name: default
+
+#  #生产环境1
+#  host: http://localhost:6001
+#  secret-key: nQRgTl93PRZhxftqj0WCQw==
+#  open-id: 7
+#  bucket-name: mos
+
+  #生产环境2
   host: http://localhost:6001
-  secret-key: nQRgTl93PRZhxftqj0WCQw==
-  open-id: 7
-  bucket-name: mos
+  secret-key: hvllZ0v5L6DyZPmsEuchWw==
+  open-id: 5
+  bucket-name: default
 
 
 cloud:
   backup-paths:
 #    - srcPath: C:/Users/Administrator/Desktop/test
 #      desPath: /backup/test
-    - srcPath: "D:/baidu/1.21风 婚礼"
-      desPath: "/婚礼/婚礼照片"
-      includes: ["**/*.jpg","**/*.png"]
+#    - srcPath: "D:/baidu/1.21风 婚礼"
+    - srcPath: "H:/out/erocool"
+      desPath: "/resources/漫画"
+      excludes: ["**/*.tmp"]
+#      includes: ["**/*"]
 #  recover-paths:
 #    - srcPath: /backup/test
 #      desPath: C:/Users/Administrator/Desktop/test-recover
+

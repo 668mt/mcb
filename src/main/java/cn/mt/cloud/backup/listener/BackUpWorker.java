@@ -172,7 +172,6 @@ public class BackUpWorker implements SmartLifecycle {
 				String srcPath = pathConfig.getSrcPath();
 				String desPath = pathConfig.getDesPath();
 				String pathname = getPathname(file, srcPath, desPath);
-				pathname = mosSdk.getSafelyPathname(pathname);
 				if (!fileRecorder.isUploaded(file)) {
 					if (mosSdk.isFileModified(pathname, file)) {
 						log.info("上传文件{}", file);
